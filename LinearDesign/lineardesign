@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+
+import warnings
+warnings.filterwarnings("ignore")
+
+import argparse
+import subprocess
+import sys
+import os
+from src.forgiworks.forgi_run import further
+from src.forgiworks.score import score_structure, penalties_to_test, GAP_RATIO
+
+def parse_arguments():
+    # star is prioritized to penalty
+    parser = argparse.ArgumentParser(description='Process some flags.')
+    parser.add_argument('-l', '--lambda_', type=float, default=0.0, help='set lambda')
+    parser.add_argument('-v', '--verbose', action='store_true', help='print out more details')
+    parser.add_argument('-c', '--codonusage', type=str, default='codon_usage_freq_table_human.csv')
+    parser.add_argument('-u3', '--utr3', type=str, default='')
+    parser.add_argument('-p', '--penalty', type=str, default='')
+    parser.add_argument('-r', '--radial', action='store_true', help="Radial making mode")
+    parser.add_argument('-s', '--score', action='store_true', help="Add -s to add score at the end of the result")
+    return parser.parse_args()
+
+def main():
+    # 1. Read all stdin into a variable once
+    input_data = sys.stdin.read()
+    temp_input = input_data.split("\n")
+    for s in temp_input:
+        if(s[0] == ">"):
+            continue
+        else:
+            input_data = s
+            break
+    cnt = 1
+
+    args = parse_arguments()
+    lambda_ = str(args.lambda_)
+    verbose_ = '1' if args.verbose else '0'
+    codon_usage = str(args.codonusage)
+    utr3 = str(args.utr3)
+    penalty = str(args.penalty)
+    radial_mode = args.radial
+    is_score = True if args.score else False
+
+    path = os.path.dirname(os.path.abspath(__file__))
+    
+    if radial_mode:
+        #print("Radial mode with GAP_RATIO:", GAP_RATIO, flush=True))
+        cmd = [
+            os.path.join(path, 'bin/LinearDesign_2D'),
+            lambda_,
+            verbose_,
+            codon_usage,
+            utr3,
+            "",
+        ]
+        output_file = "tmp/tmp_radial_nopenalty"
+        dotbracket = ""
+        rnaseq = ""
+        with open(output_file, "w") as of:
+            process = subprocess.run(cmd, input=input_data, text=True, capture_output=True)
+            of.write(process.stdout)
+        #print(process.stdout, flush=True)
+        #### of closed
+        with open(output_file, "r") as inf:
+            line = inf.readline()
+            while line:
+                if line.startswith("mRNA sequence:"):
+                    rnaseq = line[15:].replace(" ", "").replace("\n", "")
+                    break
+                line = inf.readline()
+        #### inf closed
+        # command to run
+        command = ["../LinearPartition/linearpartition", "-V", "-M"]
+        
+        # file
+        with open("./tmp/tmp_log_dotbracket_score", "w") as fout:
+            process = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=fout,
+                stderr=subprocess.PIPE
+            )
+            process.communicate(input=rnaseq.encode())
+        #### subprocess done
+        
+        with open("./tmp/tmp_log_dotbracket_score", "r") as fin:
+            trash = fin.readline()
+            trash = fin.readline()
+            dotbracket = fin.readline().replace("\n", "").replace(" ", "")
+        # End of fin
+        graph_nopenalty, cycles_nopenalty, score_nopenalty, defines_default, edges_default, stem_lengths_default = score_structure(dotbracket, "score")
+        penalty_list = penalties_to_test(graph_nopenalty, cycles_nopenalty, defines_default, edges_default, stem_lengths_default, len(rnaseq))
+        for penalty in penalty_list:
+            cmd = [
+                os.path.join(path, 'bin/LinearDesign_2D'),
+                lambda_,
+                verbose_,
+                codon_usage,
+                utr3,
+                penalty,
+            ]
+            process = subprocess.run(cmd, input=input_data, text=True, capture_output=True)
+            output = process.stdout.strip()
+            dotbracket_RNA = ""
+            
+            for line in output.split("\n"):
+                if line.startswith("mRNA structure:"):
+                    dotbracket_RNA = line.split("mRNA structure:")[1].strip()
+                    break
+            # End of for loop
+            
+            if not dotbracket_RNA:
+                print("Error: dotbracket_RNA is empty", flush=True)
+                continue
+            a,b,score_RNA,d,e,f = score_structure(dotbracket_RNA, "score")
+            print(process.stdout.rstrip('\n'), flush=True)
+            if is_score:
+                print("Score:", score_RNA, flush=True)
+            print()
+        exit(0)
+    # End of radial mode
+    
+    ## normal cases
+    cmd = [
+        os.path.join(path, 'bin/LinearDesign_2D'),
+        lambda_,
+        verbose_,
+        codon_usage,
+        utr3,
+        penalty,
+    ]
+    if not penalty:
+        print("Penalties: None")
+
+    # 2. Pass the cached data as input each time
+    process = subprocess.run(cmd, input=input_data, text=True, capture_output=True)
+    output = process.stdout.strip()
+    dotbracket_RNA = ""
+    
+    for line in output.split():
+        for line in output.split("\n"):
+            if line.startswith("mRNA structure:"):
+                dotbracket_RNA = line.split("mRNA structure:")[1].strip()
+                break
+        # End of for loop
+    if not dotbracket_RNA:
+        print("Error: dotbracket_RNA is empty", flush=True)
+    a,b,score_RNA,d,e,f = score_structure(dotbracket_RNA, "score")
+    print(process.stdout.rstrip('\n'), flush=True)
+    if is_score:
+        print("Score:", score_RNA, flush=True)
+    print()
+    
+            
+    
+
+if __name__ == '__main__':
+    main()

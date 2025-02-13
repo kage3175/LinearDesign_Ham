@@ -135,7 +135,7 @@ mRNA sequence:  AUGAACGAUACGGAGGCGAUC
 mRNA structure: ......(((.((....)))))
 mRNA folding free energy: -1.10 kcal/mol
 mRNA CAI: 0.695
-Score: 5.337136760587025
+score: 5.337136760587025
 ```
 
 ## Example: Option --gapsearch (-g) for lineardesign_legacy

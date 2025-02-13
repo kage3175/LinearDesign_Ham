@@ -284,8 +284,8 @@ def main():
             pool.starmap(run_radial, [(i, path, lambda_, verbose_, codon_usage, utr3, input_data, tmps, len_rna, gap_list, total_run) for i in range(NUM_SEARCH)])
         sorted_results = read_and_sort_tmp_files(result_name)
         write_sorted_results(sorted_results, "./result/" + raidal_result_name + ".sorted")
-
-        print("\nSorted results have been written to", "./result/" + raidal_result_name + ".sorted")
+        
+        sys.stdout.write(f"\rJob done! Sorted results have been written to ./result/{raidal_result_name}.sorted\n")
         
         delete_tmp_files(result_name)
         

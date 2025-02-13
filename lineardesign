@@ -10,6 +10,8 @@ import os
 from src.forgiworks.forgi_run import further
 from src.forgiworks.score import score_structure, penalties_to_test, GAP_RATIO
 
+# parses the argvs
+# return parser.parse_args()
 def parse_arguments():
     # star is prioritized to penalty
     parser = argparse.ArgumentParser(description='Process some flags.')
@@ -21,6 +23,7 @@ def parse_arguments():
     parser.add_argument('-r', '--radial', action='store_true', help="Radial making mode")
     parser.add_argument('-s', '--score', action='store_true', help="Add -s to add score at the end of the result")
     return parser.parse_args()
+#### End of parse_arguments
 
 def main():
     # 1. Read all stdin into a variable once
@@ -32,7 +35,6 @@ def main():
         else:
             input_data = s
             break
-    cnt = 1
 
     args = parse_arguments()
     lambda_ = str(args.lambda_)
@@ -117,7 +119,7 @@ def main():
             a,b,score_RNA,d,e,f = score_structure(dotbracket_RNA, "score")
             print(process.stdout.rstrip('\n'), flush=True)
             if is_score:
-                print("Score:", score_RNA, flush=True)
+                print("score:", score_RNA, flush=True)
             print()
         exit(0)
     # End of radial mode
@@ -150,9 +152,9 @@ def main():
     a,b,score_RNA,d,e,f = score_structure(dotbracket_RNA, "score")
     print(process.stdout.rstrip('\n'), flush=True)
     if is_score:
-        print("Score:", score_RNA, flush=True)
+        print("score:", score_RNA, flush=True)
     print()
-    
+#### End of main
             
     
 

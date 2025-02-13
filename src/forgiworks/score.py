@@ -451,6 +451,7 @@ def score_structure(dotbracket, name):
         
         normalized_score = (score - score_min) / (score_max - score_min) * 100
         normalized_score = 100 if normalized_score > 100 else normalized_score
+        normalized_score = 0 if normalized_score < 0 else normalized_score
         
         return normalized_score
     #### End of calculate_score

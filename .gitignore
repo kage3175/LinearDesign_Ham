@@ -5,3 +5,7 @@
 /datas/*
 /myenv/*
 /aaseqs/*
+
+/result/*
+!/result/
+!/result/.gitkeep

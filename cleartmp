@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+
+import glob
+import os
+
+# Get all files in ./tmp except .gitkeep
+files = [f for f in glob.glob("./tmp/*") if f != "./tmp/.gitkeep"]
+
+# Delete each file
+for file in files:
+    os.remove(file)
+
+print("All files in ./tmp/ deleted except .gitkeep")

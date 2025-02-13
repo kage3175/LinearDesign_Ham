@@ -162,6 +162,12 @@ mRNA folding free energy: -10.20 kcal/mol
 mRNA CAI: 0.887
 ```
 
+## Example: Option --radial (-r) for lineardesign_legacy
+```
+cat rnapol | ./lineardesign_legacy -r rnapol
+## rnapol.sorted saved in ./result directory
+```
+
 
 ## Declarations
 Baidu Research has filed a patent for the LinearDesign algorithm that lists He Zhang, Liang Zhang, Ziyu Li, Kaibo Liu, Boxiang Liu, and Liang Huang as inventors.

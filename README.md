@@ -138,7 +138,7 @@ mRNA CAI: 0.695
 Score: 5.337136760587025
 ```
 
-## Example: Option -gapsearch (-g) for lineardesign_legacy
+## Example: Option --gapsearch (-g) for lineardesign_legacy
 ```
 echo MNDTEAIVVMDY | ./lineardesign_legacy -g 2
 Penalties: 10~12

@@ -135,10 +135,10 @@ mRNA sequence:  AUGAACGAUACGGAGGCGAUC
 mRNA structure: ......(((.((....)))))
 mRNA folding free energy: -1.10 kcal/mol
 mRNA CAI: 0.695
-Score: 5.337136760587025
+score: 5.337136760587025
 ```
 
-## Example: Option -gapsearch (-g) for lineardesign_legacy
+## Example: Option --gapsearch (-g) for lineardesign_legacy
 ```
 echo MNDTEAIVVMDY | ./lineardesign_legacy -g 2
 Penalties: 10~12
@@ -160,6 +160,12 @@ mRNA sequence:  AUGAAUGAUACCGAGGCCAUCGUGGUCAUGGAUUAU
 mRNA structure: ....(((((.(((.(((((...))))).))))))))
 mRNA folding free energy: -10.20 kcal/mol
 mRNA CAI: 0.887
+```
+
+## Example: Option --radial (-r) for lineardesign_legacy
+```
+cat rnapol | ./lineardesign_legacy -r rnapol
+## rnapol.sorted saved in ./result directory
 ```
 
 

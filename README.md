@@ -37,6 +37,10 @@ OR
 cat FASTA_FILE | ./lineardesign [OPTIONS]
 ```
 
+Also, there is a legacy version of lineardesign, ./lineardesign_legacy.
+--penalty option for legacy and non legacy version are different.
+--gapsearch, --radial, --max_core_num options are only available in legacy version
+
 OPTIONS:
 ```
 --lambda LAMBDA or -l LAMBDA
@@ -51,6 +55,22 @@ Import a Codon Usage Frequency Table. See "codon_usage_freq_table_human.csv" for
 --verbose or -v
 ```
 Print out more details. (default False)
+```
+--penalty or -p INT~INT,INT~INT/INT~INT,INT~INT/ ... # in lineardesign
+
+OR
+
+--penalty or -p INT~INT,INT~INT, ... # in lineardesign_legacy
+```
+Give penalty
+```
+--radial or -r FILE_NAME_TO_SAVE -m MAX_CORE_TO_USE # only in legacy version
+```
+Search for a non-linear, radial mRNA sequence and prints top 5 scored cases. Also save total results in ./result directory
+```
+--score or -s
+```
+Calculate and print score for the result sequence
 
 For Macbook, users may encounter a pop-up message at the first run.
 For Mac-M1 system, the message is:
@@ -62,6 +82,16 @@ For Mac-Intel system, the message is:
 "LinearDesign_Mac_Intel.so" cannot be opened because it is from an unidentified developer.
 ```
 If so, please go to "System Preferences -> Security & Privacy -> General" to allow LinearDesign-Mac-M1.so (or LinearDesign-Mac-Intel.so) to open.
+
+## Scoring System
+
+A score of the mRNA sequence and its structure is available. The score is between 0 and 100. The higher score means more complex structure, or more non-linear structure.
+Brief calculation of score is done like below, and then normalized to have value between 0~100.
+Scoring system uses forgi to build a graph.
+```
+score -= (max_h_to_h ** MAX_HAIRPIN_TO_HAIRPIN_QUOTIENT) * MAX_HAIRPIN_TO_HAIRPIN_RATE
+score += CYCLE_SCORE_RATE * (num_stem ** CYCLE_STEM_NUM_QUOTIENT) * (cycle_portions[i] ** CYCLE_PORTION_QUOTIENT) * ((DIFF_NORM_DEFAULT - (diff_normalized+DIFF_NORM_ADD) / DIFF_NORM_DIVIDE)), for each cycles
+```
 
 ## Example: Single Sequence Design
 ```

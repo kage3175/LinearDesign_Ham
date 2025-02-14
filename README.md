@@ -168,6 +168,12 @@ cat rnapol | ./lineardesign_legacy -r rnapol
 ## rnapol.sorted saved in ./result directory
 ```
 
+## Optional: Option --max_core_num (-m) with --radial option
+```
+cat rnapol | ./lineardesign_legacy -r rnapol -m 10
+## max cpu core number to use for -r option
+```
+
 
 ## Declarations
 Baidu Research has filed a patent for the LinearDesign algorithm that lists He Zhang, Liang Zhang, Ziyu Li, Kaibo Liu, Boxiang Liu, and Liang Huang as inventors.

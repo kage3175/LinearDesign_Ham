@@ -60,9 +60,9 @@ bool output_result(const DecoderResult<ScoreType, IndexType>& result,
 }
 
 void show_usage() {
-    cerr << "echo SEQUENCE | ./lineardesign -l [LAMBDA] -v -c [codon table] -u3 [3' UTR] -p [penalty string] -g [gap to search] -r [result name for radial mode]" << endl;
+    cerr << "echo SEQUENCE | ./lineardesign -l [LAMBDA] -v -c [codon table] -u3 [3' UTR] -p [penalty string] -g [gap to search] -r [result name for radial mode] -m [max core to use]" << endl;
     cerr << "OR" << endl;
-    cerr << "cat SEQ_FILE_OR_FASTA_FILE | ./lineardesign -l [LAMBDA] -v -c [codon table] -u3 [3' UTR] -p [penalty string] -g [gap to search] -r [result name for radial mode]" << endl;
+    cerr << "cat SEQ_FILE_OR_FASTA_FILE | ./lineardesign -l [LAMBDA] -v -c [codon table] -u3 [3' UTR] -p [penalty string] -g [gap to search] -r [result name for radial mode] -m [max core to use]" << endl;
 }
 
 //==========================================================================

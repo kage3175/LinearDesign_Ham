@@ -14,8 +14,7 @@ import glob, re, time
 
 # region constants
 #### constants
-START_POS =  5# work as trim
-MAX_CPU = min(os.cpu_count() - 1, 10)
+START_POS =  5 # work as trim
 NUM_SEARCH = 10
 #### End of constants
 # endregion
@@ -46,6 +45,7 @@ def parse_arguments():
     parser.add_argument('-p', '--penalty', type=str, default='')
     parser.add_argument('-r', '--radial', type=str, default = "", help="Save as")
     parser.add_argument('-s', '--score', action='store_true', default="", help="Add -s to add score at the end of the result")
+    parser.add_argument('-m', '--max_core_num', type=int, default=15, help="Maximum core number to use in radial mode")
     # region temp
     #### Temp code, -g is temporary arg
     parser.add_argument('-g', '--gapsearch', type=int, default=0)
@@ -58,6 +58,7 @@ def parse_arguments():
 # return sequence
 def generate_ap(length):
     a1 = length / 30
+    a1 = 2 if a1 <= 1 else a1
     a10 = length / 8
     n = NUM_SEARCH
     
@@ -91,13 +92,10 @@ def print_progress_bar(total_run, bar_length=100):
     sys.stdout.flush()
 #### End of print_progress_bar
 
-def run_radial(i, path, lambda_, verbose_, codon_usage, utr3, input_data, tmps, len_rna, gap_list, total_run):
-    pos = START_POS
+def run_radial(i, path, lambda_, verbose_, codon_usage, utr3, input_data, tmps, penalty_list, total_run):
     result_str = ""
-    cnt = 0
-
-    while pos < len_rna - START_POS - gap_list[i]:
-        penalty = f"{pos}~{pos + gap_list[i]}"
+    
+    for penalty in penalty_list[i]:
         cmd = [
             os.path.join(path, 'bin/LinearDesign_2D_legacy'),
             lambda_,
@@ -116,19 +114,43 @@ def run_radial(i, path, lambda_, verbose_, codon_usage, utr3, input_data, tmps, 
         with lock:
             counter.value += 1
             print_progress_bar(total_run)  # Update visual progress bar
-        
-        pos += (gap_list[i] // 2)
-        cnt+=1
-    # End of while loop
+    # End of for loop
     
     with open(tmps[i], "w") as of:
         of.write(result_str)
 #### End of run_radial
 
+def radial_make_penalty_list(gap_list, len_rna):
+    penalty_list = []
+    for i in range(NUM_SEARCH):
+        pos = START_POS
+        while pos < len_rna - START_POS - gap_list[i]:
+            penalty_list.append(f"{pos}~{pos + gap_list[i]}")
+            pos += (gap_list[i] // 2)
+    return penalty_list
+#### End of raidal_make_penalty_list
+
+def split_list(lst, num):
+    length = len(lst)
+    avg_size = length // num
+    remainder = length % num
+    result = []
+    start = 0
+    
+    for i in range(num):
+        extra = 1 if i < remainder else 0  # Distribute the remainder elements
+        end = start + avg_size + extra
+        result.append(lst[start:end])
+        start = end  # Move to next segment
+
+    return result
+#### End of split_list
+
 def extract_score(content):
     """Extracts the score from the given file content."""
     match = re.search(r'score:\s*([\d.]+)', content)
     return float(match.group(1)) if match else None  # Convert score to float
+#### End of extract_score
 
 def read_and_sort_tmp_files(result_name):
     """Reads all .tmp files, extracts scores, and sorts the results."""
@@ -149,12 +171,14 @@ def read_and_sort_tmp_files(result_name):
     results.sort(key=lambda x: x[0], reverse=True)
 
     return results  # Returns a sorted list of (score, content)
+#### End of read_and_sort_tmp_files
 
 def write_sorted_results(sorted_results, output_file="./result/sorted_results.txt"):
     """Writes the sorted mRNA blocks to an output file."""
     with open(output_file, "w", encoding="utf-8") as f:
         for score, content in sorted_results:
             f.write(f"{content}\n\n")  # Write full block, separate with blank line
+#### End of write_sorted_results
 
 # deletes temporary files
 def delete_tmp_files(result_name, directory="./tmp"):    
@@ -185,6 +209,7 @@ def init_globals(shared_counter, shared_lock):
     global counter, lock
     counter = shared_counter
     lock = shared_lock
+#### End of init_globals
 
 def main():
     global counter, lock
@@ -208,6 +233,7 @@ def main():
     radial_mode = True if args.radial else False
     raidal_result_name = args.radial.strip()
     is_score = True if args.score else False
+    max_core_num = max(1, min(args.max_core_num, os.cpu_count() - 1))
     
     # region temp
     #### Temp codes, to erase
@@ -217,7 +243,10 @@ def main():
 
     path = os.path.dirname(os.path.abspath(__file__))
     
+    # region radial
     if radial_mode:
+        print()
+        print("Preprocessing...", end = "", flush=True)
         result_name = raidal_result_name + str(int(time.time()))
         total_run = 0
         cmd = [
@@ -271,25 +300,38 @@ def main():
             sys.exit(1)
         len_rna = len(dotbracket)
         gap_list = generate_ap(len_rna)
-        tmps = ["./tmp/" + result_name + "_tmp" + str(i) + ".tmp" for i in range(NUM_SEARCH)]
+        tmps = ["./tmp/" + result_name + "_tmp" + str(i) + ".tmp" for i in range(max_core_num)]
         
         total_run = calculate_total_run(gap_list, len_rna)
         counter = multiprocessing.Value("i", 0)  # Shared integer counter
         lock = multiprocessing.Lock()  # Lock for thread safety
+        penalty_list = radial_make_penalty_list(gap_list, len_rna)
+        penalties_to_test = split_list(penalty_list, max_core_num)
+        print("\rPreprocessing Done!")
         
         print("\nProcessing...")  # Initial message
         print_progress_bar(total_run)  # Initial empty progress bar
         
-        with multiprocessing.Pool(processes=MAX_CPU, initializer=init_globals, initargs=(counter, lock)) as pool:
-            pool.starmap(run_radial, [(i, path, lambda_, verbose_, codon_usage, utr3, input_data, tmps, len_rna, gap_list, total_run) for i in range(NUM_SEARCH)])
+        with multiprocessing.Pool(processes=max_core_num, initializer=init_globals, initargs=(counter, lock)) as pool:
+            pool.starmap(run_radial, [(i, path, lambda_, verbose_, codon_usage, utr3, input_data, tmps, penalties_to_test, total_run) for i in range(max_core_num)])
         sorted_results = read_and_sort_tmp_files(result_name)
         write_sorted_results(sorted_results, "./result/" + raidal_result_name + ".sorted")
         
-        sys.stdout.write(f"\rJob done! Sorted results have been written to ./result/{raidal_result_name}.sorted\n")
+        sys.stdout.write(f"\rJob done! Sorted results have been written to ./result/{raidal_result_name}.sorted\n\n")
+        
+        print("---------Top 5 mRNA sequences---------\n", flush=True)
+        cnt = 0
+        for score, content in sorted_results:
+            if cnt >= 5:
+                break
+            print(content, "\n", flush = True)
+            cnt+=1
         
         delete_tmp_files(result_name)
         
         exit(0)
+    #### End of radial mode
+    #endregion
     
     # region gap
     elif gapsearch > 0:
